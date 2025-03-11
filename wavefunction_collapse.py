@@ -46,7 +46,7 @@ def wf_collapse(tileset: Tileset,
     else:
         return_map = [{*tileset.tiles}
                       for _ in range(dimensions[0] * dimensions[1])]
-    print(return_map)
+    # print(return_map)
 
     return return_map
 
@@ -55,14 +55,29 @@ def main():
     tileset = Tileset()
     tileset.add_tile("-", "---", {"/l": 0.5})
     tileset.add_tile("/", "///", {"-r": 0.5})
-    wf_collapse(tileset, (4, 4))
-    wf_collapse(tileset, (5, 5), [
+    print("4x4 map\n")
+    map1 = wf_collapse(tileset, (4, 4))
+    render_map(map1, (4, 4))
+    print("\n5x5 map\n")
+    map2 = wf_collapse(tileset, (5, 5), [
         {"-", "/"}, {"-", "/"}, {"-", "/"}, {"-", "/"}, {"-", "/"},
         {"-", "/"}, {"-", "/"}, {"-", "/"}, {"-", "/"}, {"-", "/"},
         {"-", "/"}, {"-", "/"}, {"-", "/"}, {"-", "/"}, {"-", "/"},
         {"-", "/"}, {"-", "/"}, {"-", "/"}, {"-", "/"}, {"-", "/"},
         {"-", "/"}, {"-", "/"}, {"-", "/"}, None, {"-", "/"},
         ])
+    render_map(map2, (5, 5))
+    # map3 = wf_collapse(tileset, (8, 8))
+    # render_map(map3, (8, 8))
+
+def render_map(map_data: list[set[str] | str], dimensions: tuple[int, int]):
+    # Render the map in ascii
+    for i in range(dimensions[0]):
+        row = map_data[i * dimensions[1]:(i + 1) * dimensions[1]]
+        print(" ".join(
+            tile if isinstance(tile, str) else "{" + ",".join(tile) + "}"
+            for tile in row
+        ))
 
 
 if __name__ == "__main__":
