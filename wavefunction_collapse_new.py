@@ -1,6 +1,7 @@
 import random
 from enum import IntEnum
-
+from player import Player  # Import the Player class
+from pynput import keyboard  # Import keyboard listener
 
 class Direction(IntEnum):
     N = 0
@@ -55,9 +56,30 @@ def main():
             Direction.W: {"B", "O"},
         },
     }
-    dimensions = (3, 3)
+    dimensions = (12,12)
     map = map_generation(dimensions, tileset, rules)
+    player = Player(0, 0, dimensions)  # Initialize player at (0, 0)
+    player.update_map(map)  # Place player on the map
+
+    def on_press(key):
+        try:
+            if key.char.upper() in {"W", "A", "S", "D"}:
+                player.move(key.char.upper())
+                player.update_map(map)  # Update map with new player position
+                print(map)
+                print(f"Player position: {player.get_position()}")
+            elif key.char.upper() == "Q":  # Quit the game
+                print("Exiting game.")
+                return False
+        except AttributeError:
+            pass
+
     print(map)
+    print(f"Player position: {player.get_position()}")
+    print("Use W, A, S, D to move or Q to quit.")
+
+    with keyboard.Listener(on_press=on_press) as listener:
+        listener.join()
 
 
 def map_generation(dimensions: tuple[int, int], tileset: set[str], rules: dict[str, dict[Direction, set[str]]]):
@@ -88,8 +110,9 @@ def map_generation(dimensions: tuple[int, int], tileset: set[str], rules: dict[s
 class Map:
     def __init__(self, dimensions: tuple[int, int], tileset: set[str]):
         self.dimensions = dimensions
-        num_tiles = dimensions[0] * dimensions[1]
+        num_tiles = dimensions[0] * self.dimensions[1]
         self.tiles: list[set[str] | str] = [tileset for _ in range(num_tiles)]
+        self.original_tiles: list[str] = ["e" for _ in range(num_tiles)]  # Store original tiles
 
     def get_tile(self, x: int, y: int):
         return self.tiles[y * self.dimensions[0] + x]
@@ -102,6 +125,8 @@ class Map:
 
     def set_tile(self, x: int, y: int, value: str | set[str]):
         self.tiles[y * self.dimensions[0] + x] = value
+        if value != "P":  # Update original tiles only if not setting the player
+            self.original_tiles[y * self.dimensions[0] + x] = value
 
     # sets tiles in grid
     def __str__(self):
