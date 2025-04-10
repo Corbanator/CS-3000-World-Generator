@@ -2,6 +2,7 @@ import random
 from enum import IntEnum
 from player import Player  # Import the Player class
 from pynput import keyboard  # Import keyboard listener
+import colorama
 
 class Direction(IntEnum):
     N = 0
@@ -32,6 +33,56 @@ class Direction(IntEnum):
             case Direction.SW: return (-1, 1)
             case Direction.W: return (-1, 0)
             case Direction.NW: return (-1, -1)
+
+
+class Map:
+    def __init__(self, dimensions: tuple[int, int], tileset: set[str]):
+        self.dimensions = dimensions
+        num_tiles = dimensions[0] * self.dimensions[1]
+        self.tiles: list[set[str] | str] = [tileset for _ in range(num_tiles)]
+        self.original_tiles: list[str] = ["e" for _ in range(num_tiles)]  # Store original tiles
+
+    def get_tile(self, x: int, y: int):
+        return self.tiles[y * self.dimensions[0] + x]
+
+    def get_tile_string(self, x: int, y: int):
+        colors = {
+                "O": colorama.Fore.BLUE,
+                "B": colorama.Fore.YELLOW,
+                "L": colorama.Fore.GREEN,
+                "P": colorama.Fore.MAGENTA
+                }
+        tile = self.tiles[y * self.dimensions[0] + x]
+        if isinstance(tile, set):
+            tile = "e"
+        return colors[tile] +  tile
+
+    def set_tile(self, x: int, y: int, value: str | set[str]):
+        self.tiles[y * self.dimensions[0] + x] = value
+        if value != "P":  # Update original tiles only if not setting the player
+            self.original_tiles[y * self.dimensions[0] + x] = value
+
+    # sets tiles in grid
+    def __str__(self):
+        return_string = ""
+        for i in range(self.dimensions[1]):
+            for j in range(self.dimensions[0]):
+                return_string += self.get_tile_string(j, i)
+            # Avoid trailing newline
+            if i != self.dimensions[1] - 1:
+                return_string += "\n"
+        return_string += colorama.Style.RESET_ALL
+        return return_string
+
+    def print_debug(self):
+        return_string = ""
+        for i in range(self.dimensions[1]):
+            for j in range(self.dimensions[0]):
+                return_string += str(self.get_tile(j, i))
+            # Avoid trailing newline
+            if i != self.dimensions[1] - 1:
+                return_string += "\n"
+        print(return_string)
 
 
 def main():
@@ -89,55 +140,37 @@ def map_generation(dimensions: tuple[int, int], tileset: set[str], rules: dict[s
             tile_options = map.get_tile(i, j)
             if isinstance(tile_options, set):
                 choice = random.choice(list(tile_options))
-                map.set_tile(i, j, random.choice(list(tileset)))
-                for dir in Direction:
-                    target = (i, j) + dir.get_tuple()
-                    if not (target[0] < 0
-                            or target[0] >= dimensions[0]
-                            or target[1] < 0
-                            or target[1] >= dimensions[1]):
-                        target_options = map.get_tile(i, j)
-                        if isinstance(target_options, set):
-                            new_options = rules[choice][dir].intersection(target_options)
-                            if len(new_options) == 0:
-                                raise ValueError
-                            if len(new_options) == 1:
-                                new_options = new_options.pop()
-                            map.set_tile(i, j, new_options)
+                map.set_tile(i, j, choice)
+                propagate_collapse(map, tileset, rules, (i, j), None)
     return map
 
+def propagate_collapse(map: Map, tileset: set[str], rules: dict[str, dict[Direction, set[str]]], position: tuple[int, int], direction: Direction | None = None):
+    prop_source = map.get_tile(position[0], position[1])
+    for dir in [Direction.N, Direction.E, Direction.S, Direction.W]:
+        if dir != direction:
+            target = (position[0] + dir.get_tuple()[0], position[1] + dir.get_tuple()[1])
+            if not (target[0] < 0
+                    or target[0] >= map.dimensions[0]
+                    or target[1] < 0
+                    or target[1] >= map.dimensions[1]):
+                target_options = map.get_tile(target[0], target[1])
+                if isinstance(target_options, set):
+                    if isinstance(prop_source, set):
+                        allowable_tiles = set()
+                        for i in prop_source:
+                            allowable_tiles = allowable_tiles.union(rules[i][dir])
+                        new_options = target_options.intersection(allowable_tiles)
+                    else:
+                        new_options = rules[prop_source][dir].intersection(target_options)
+                    if len(new_options) == 0:
+                        raise ValueError
+                    map.set_tile(target[0], target[1], new_options)
+                    if new_options != target_options:
+                        propogate_collapse(map, tileset, rules, target, dir.opposite())
 
-class Map:
-    def __init__(self, dimensions: tuple[int, int], tileset: set[str]):
-        self.dimensions = dimensions
-        num_tiles = dimensions[0] * self.dimensions[1]
-        self.tiles: list[set[str] | str] = [tileset for _ in range(num_tiles)]
-        self.original_tiles: list[str] = ["e" for _ in range(num_tiles)]  # Store original tiles
 
-    def get_tile(self, x: int, y: int):
-        return self.tiles[y * self.dimensions[0] + x]
 
-    def get_tile_string(self, x: int, y: int):
-        tile = self.tiles[y * self.dimensions[0] + x]
-        if isinstance(tile, set):
-            tile = "e"
-        return tile
 
-    def set_tile(self, x: int, y: int, value: str | set[str]):
-        self.tiles[y * self.dimensions[0] + x] = value
-        if value != "P":  # Update original tiles only if not setting the player
-            self.original_tiles[y * self.dimensions[0] + x] = value
-
-    # sets tiles in grid
-    def __str__(self):
-        return_string = ""
-        for i in range(self.dimensions[1]):
-            for j in range(self.dimensions[0]):
-                return_string += self.get_tile_string(j, i)
-            # Avoid trailing newline
-            if i != self.dimensions[1] - 1:
-                return_string += "\n"
-        return return_string
 
 
 
