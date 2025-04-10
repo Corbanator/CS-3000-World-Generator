@@ -1,18 +1,25 @@
-class Player:
-    def __init__(self, start_x: int, start_y: int, map_dimensions: tuple[int, int]):
-        self.x = start_x
-        self.y = start_y
-        self.map_width, self.map_height = map_dimensions
+import random
 
-    def move(self, direction: str):
+class Player:
+    def __init__(self, map_dimensions: tuple[int, int]):
+        self.map_width, self.map_height = map_dimensions
+        self.x = random.randint(0, self.map_width - 1)
+        self.y = random.randint(0, self.map_height - 1)
+
+    def move(self, direction: str, map):
+        target_x, target_y = self.x, self.y
         if direction == "W" and self.y > 0:
-            self.y -= 1
+            target_y -= 1
         elif direction == "A" and self.x > 0:
-            self.x -= 1
+            target_x -= 1
         elif direction == "S" and self.y < self.map_height - 1:
-            self.y += 1
+            target_y += 1
         elif direction == "D" and self.x < self.map_width - 1:
-            self.x += 1
+            target_x += 1
+
+        # Check if the target tile is not "O"
+        if map.get_tile(target_x, target_y) != "O":
+            self.x, self.y = target_x, target_y
 
     def get_position(self):
         return self.x, self.y

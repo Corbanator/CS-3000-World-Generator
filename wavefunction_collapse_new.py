@@ -109,25 +109,32 @@ def main():
     }
     dimensions = (12,12)
     map = map_generation(dimensions, tileset, rules)
-    player = Player(0, 0, dimensions)  # Initialize player at (0, 0)
+    player = Player(dimensions)  # Initialize player with randomized position
     player.update_map(map)  # Place player on the map
 
     def on_press(key):
         try:
-            if key.char.upper() in {"W", "A", "S", "D"}:
-                player.move(key.char.upper())
-                player.update_map(map)  # Update map with new player position
-                print(map)
-                print(f"Player position: {player.get_position()}")
+            if key == keyboard.Key.up:
+                player.move("W", map)
+            elif key == keyboard.Key.left:
+                player.move("A", map)
+            elif key == keyboard.Key.down:
+                player.move("S", map)
+            elif key == keyboard.Key.right:
+                player.move("D", map)
             elif key.char.upper() == "Q":  # Quit the game
                 print("Exiting game.")
                 return False
+
+            player.update_map(map)  # Update map with new player position
+            print(map)
+            print(f"Player position: {player.get_position()}")
         except AttributeError:
             pass
 
     print(map)
     print(f"Player position: {player.get_position()}")
-    print("Use W, A, S, D to move or Q to quit.")
+    print("Use arrow keys to move or Q to quit.")
 
     with keyboard.Listener(on_press=on_press) as listener:
         listener.join()
@@ -166,14 +173,7 @@ def propagate_collapse(map: Map, tileset: set[str], rules: dict[str, dict[Direct
                         raise ValueError
                     map.set_tile(target[0], target[1], new_options)
                     if new_options != target_options:
-                        propogate_collapse(map, tileset, rules, target, dir.opposite())
-
-
-
-
-
-
-
+                        propagate_collapse(map, tileset, rules, target, dir.opposite())
 
 if __name__ == "__main__":
     main()
