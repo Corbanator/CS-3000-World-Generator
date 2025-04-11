@@ -110,6 +110,8 @@ def main():
     dimensions = (12,12)
     map = map_generation(dimensions, tileset, rules)
     player = Player(dimensions)  # Initialize player with randomized position
+    while map.get_tile(player.x, player.y) == "O":
+        player = Player(dimensions)  # Reinitialize player until not on 'O'
     player.update_map(map)  # Place player on the map
 
     def on_press(key):
@@ -128,12 +130,12 @@ def main():
 
             player.update_map(map)  # Update map with new player position
             print(map)
-            print(f"Player position: {player.get_position()}")
+            # print(f"Player position: {player.get_position()}")
         except AttributeError:
             pass
 
     print(map)
-    print(f"Player position: {player.get_position()}")
+    # print(f"Player position: {player.get_position()}")
     print("Use arrow keys to move or Q to quit.")
 
     with keyboard.Listener(on_press=on_press) as listener:
