@@ -2,7 +2,7 @@ import random
 from enum import IntEnum
 from player import Player  # Import the Player class
 from pynput import keyboard  # Import keyboard listener
-import colorama
+from mapVisual import MapVisualizer  # Import MapVisualizer from mapVisual
 
 class Direction(IntEnum):
     N = 0
@@ -46,32 +46,23 @@ class Map:
         return self.tiles[y * self.dimensions[0] + x]
 
     def get_tile_string(self, x: int, y: int):
-        colors = {
-                "O": colorama.Fore.BLUE,
-                "B": colorama.Fore.YELLOW,
-                "L": colorama.Fore.GREEN,
-                "P": colorama.Fore.MAGENTA
-                }
         tile = self.tiles[y * self.dimensions[0] + x]
         if isinstance(tile, set):
             tile = "e"
-        return colors[tile] +  tile
+        return tile
 
     def set_tile(self, x: int, y: int, value: str | set[str]):
         self.tiles[y * self.dimensions[0] + x] = value
         if value != "P":  # Update original tiles only if not setting the player
             self.original_tiles[y * self.dimensions[0] + x] = value
 
-    # sets tiles in grid
     def __str__(self):
         return_string = ""
         for i in range(self.dimensions[1]):
             for j in range(self.dimensions[0]):
                 return_string += self.get_tile_string(j, i)
-            # Avoid trailing newline
             if i != self.dimensions[1] - 1:
                 return_string += "\n"
-        return_string += colorama.Style.RESET_ALL
         return return_string
 
     def print_debug(self):
@@ -79,7 +70,6 @@ class Map:
         for i in range(self.dimensions[1]):
             for j in range(self.dimensions[0]):
                 return_string += str(self.get_tile(j, i))
-            # Avoid trailing newline
             if i != self.dimensions[1] - 1:
                 return_string += "\n"
         print(return_string)
@@ -107,39 +97,27 @@ def main():
             Direction.W: {"B", "O"},
         },
     }
-    dimensions = (12,12)
+    dimensions = (20,20)
     map = map_generation(dimensions, tileset, rules)
     player = Player(dimensions)  # Initialize player with randomized position
     while map.get_tile(player.x, player.y) == "O":
         player = Player(dimensions)  # Reinitialize player until not on 'O'
     player.update_map(map)  # Place player on the map
 
-    def on_press(key):
-        try:
-            if key == keyboard.Key.up:
-                player.move("W", map)
-            elif key == keyboard.Key.left:
-                player.move("A", map)
-            elif key == keyboard.Key.down:
-                player.move("S", map)
-            elif key == keyboard.Key.right:
-                player.move("D", map)
-            elif key.char.upper() == "Q":  # Quit the game
-                print("Exiting game.")
-                return False
-
-            player.update_map(map)  # Update map with new player position
-            print(map)
-            # print(f"Player position: {player.get_position()}")
-        except AttributeError:
-            pass
-
-    print(map)
-    # print(f"Player position: {player.get_position()}")
     print("Use arrow keys to move or Q to quit.")
 
-    with keyboard.Listener(on_press=on_press) as listener:
-        listener.join()
+    visualizer = MapVisualizer(map, player)  # Initialize the visualizer
+
+    def on_keypress(event):
+        player.handle_keypress(event, map, visualizer)  # Delegate keypress handling to Player
+
+    visualizer.root.bind("<Up>", lambda event: on_keypress(event))
+    visualizer.root.bind("<Left>", lambda event: on_keypress(event))
+    visualizer.root.bind("<Down>", lambda event: on_keypress(event))
+    visualizer.root.bind("<Right>", lambda event: on_keypress(event))
+    visualizer.root.bind("q", lambda event: on_keypress(event))  # Bind 'q' key to quit
+
+    visualizer.run()  # Run the tkinter visualization
 
 
 def map_generation(dimensions: tuple[int, int], tileset: set[str], rules: dict[str, dict[Direction, set[str]]]):

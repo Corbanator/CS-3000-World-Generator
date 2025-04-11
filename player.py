@@ -1,33 +1,34 @@
 import random
 
 class Player:
-    def __init__(self, map_dimensions: tuple[int, int]):
-        self.map_width, self.map_height = map_dimensions
-        self.x = random.randint(0, self.map_width - 1)
-        self.y = random.randint(0, self.map_height - 1)
-
-    def move(self, direction: str, map):
-        target_x, target_y = self.x, self.y
-        if direction == "W" and self.y > 0:
-            target_y -= 1
-        elif direction == "A" and self.x > 0:
-            target_x -= 1
-        elif direction == "S" and self.y < self.map_height - 1:
-            target_y += 1
-        elif direction == "D" and self.x < self.map_width - 1:
-            target_x += 1
-
-        # Check if the target tile is not "O"
-        if map.get_tile(target_x, target_y) != "O":
-            self.x, self.y = target_x, target_y
-
-    def get_position(self):
-        return self.x, self.y
+    def __init__(self, dimensions):
+        self.x = random.randint(0, dimensions[0] - 1)
+        self.y = random.randint(0, dimensions[1] - 1)
 
     def update_map(self, map):
-        for i in range(map.dimensions[1]):
-            for j in range(map.dimensions[0]):
-                tile = map.get_tile(j, i)
-                if tile == "P":
-                    map.set_tile(j, i, map.original_tiles[j + i * map.dimensions[0]])  # Restore original tile
-        map.set_tile(self.x, self.y, "P")  # Set new player position
+        map.set_tile(self.x, self.y, "P")
+
+    def handle_keypress(self, event, map, visualizer):
+        key = event.keysym
+        if key == "Up":
+            self.move(0, -1, map, visualizer)
+        elif key == "Down":
+            self.move(0, 1, map, visualizer)
+        elif key == "Left":
+            self.move(-1, 0, map, visualizer)
+        elif key == "Right":
+            self.move(1, 0, map, visualizer)
+        elif key == "q":
+            visualizer.root.destroy()
+
+    def move(self, dx, dy, map, visualizer):
+        new_x = self.x + dx
+        new_y = self.y + dy
+
+        if 0 <= new_x < map.dimensions[0] and 0 <= new_y < map.dimensions[1]:
+            if map.get_tile(new_x, new_y) != "O":
+                map.set_tile(self.x, self.y, map.original_tiles[self.y * map.dimensions[0] + self.x])
+                self.x = new_x
+                self.y = new_y
+                map.set_tile(self.x, self.y, "P")
+                visualizer.update()
