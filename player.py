@@ -1,4 +1,5 @@
 import random
+from position import Position
 
 class Player:
     def __init__(self, map_dimensions: tuple[int, int]):
@@ -18,7 +19,7 @@ class Player:
             target_x += 1
 
         # Check if the target tile is not "O"
-        if map.get_tile(target_x, target_y) != "O":
+        if map.get_tile(Position(target_x, target_y)) != "O":
             self.x, self.y = target_x, target_y
 
     def get_position(self):
@@ -27,7 +28,7 @@ class Player:
     def update_map(self, map):
         for i in range(map.dimensions[1]):
             for j in range(map.dimensions[0]):
-                tile = map.get_tile(j, i)
+                tile = map.get_tile(Position(j, i))
                 if tile == "P":
-                    map.set_tile(j, i, map.original_tiles[j + i * map.dimensions[0]])  # Restore original tile
-        map.set_tile(self.x, self.y, "P")  # Set new player position
+                    map.set_tile(Position(j, i), map.original_tiles[j + i * map.dimensions[0]])  # Restore original tile
+        map.set_tile(Position(self.x, self.y), "P")  # Set new player position

@@ -1,73 +1,113 @@
 import random
-from enum import IntEnum
 from player import Player  # Import the Player class
 from pynput import keyboard  # Import keyboard listener
 import colorama
+from position import Position, Direction
 
-class Direction(IntEnum):
-    N = 0
-    NE = 1
-    E = 2
-    SE = 3
-    S = 4
-    SW = 5
-    W = 6
-    NW = 7
+class Tileset:
+    def __init__(self, 
+                 tiles: set[str] | None = None, 
+                 rules: dict[str, dict[Direction, set[str]]] | None = None, 
+                 colors: dict[str, str] | None = None):
+        if tiles is not None:
+            self.tiles = tiles
+        else:
+            self.tiles = set()
+        if rules is not None:
+            for rule in rules:
+                if rule not in self.tiles:
+                    raise ValueError
+                for dir in Direction.all_cardinal():
+                    if rules[rule][dir].intersection(self.tiles) != rules[rule][dir]:
+                        raise ValueError
+            self.rules = rules
+        else:
+            self.rules: dict[str, dict[Direction, set[str]]] = {}
+        if colors is not None:
+            for color in colors:
+                if color not in self.tiles:
+                    raise ValueError
+            self.colors = colors
+        else:
+            self.colors: dict[str, str] = {}
 
-    def opposite(self):
-        return Direction((self + 4) % 8)
+    def add_rule(self, init_tiles: set[str], directions: set[Direction], terminal_tiles: set[str]):
+        if (init_tiles.intersection(self.tiles) != init_tiles 
+                or terminal_tiles.intersection(self.tiles) != terminal_tiles):
+            raise ValueError
+        for dir in directions:
+            for tile in init_tiles:
+                if tile not in self.rules:
+                    self.rules[tile] = {}
+                if dir not in self.rules[tile]:
+                    self.rules[tile][dir] = set()
+                self.rules[tile][dir] = terminal_tiles.union(self.rules.get(tile, {}).get(dir, set()))
+            for tile in terminal_tiles:
+                if tile not in self.rules:
+                    self.rules[tile] = {}
+                if dir not in self.rules[tile]:
+                    self.rules[tile][dir] = set()
+                self.rules[tile][dir.opposite()] = init_tiles.union(self.rules.get(tile, {}).get(dir, set()))
 
-    def clockwise_turn(self):
-        return Direction((self + 2) % 8)
 
-    def counter_clockwise_turn(self):
-        return Direction((self + 6) % 8)
+    def add_tiles(self, tiles: set[str]):
+        self.tiles = self.tiles.union(tiles)
 
-    def get_tuple(self):
-        match self:
-            case Direction.N: return (0, -1)
-            case Direction.NE: return (1, -1)
-            case Direction.E: return (1, 0)
-            case Direction.SE: return (1, 1)
-            case Direction.S: return (0, 1)
-            case Direction.SW: return (-1, 1)
-            case Direction.W: return (-1, 0)
-            case Direction.NW: return (-1, -1)
+    def get_options(self, init_tileset: set[str] | str, direction: Direction):
+        options = set()
+        if isinstance(init_tileset, set):
+            for tile in init_tileset:
+                options = options.union(self.rules[tile][direction])
+        else:
+            options = self.rules[init_tileset][direction]
+        return options
+
+    def add_colors(self, colors: dict[str, str]):
+        for i in colors:
+            if i not in self.tiles:
+                raise ValueError
+            self.colors[i] = colors[i]
 
 
 class Map:
-    def __init__(self, dimensions: tuple[int, int], tileset: set[str]):
+    def __init__(self, dimensions: tuple[int, int], tileset: Tileset):
         self.dimensions = dimensions
         num_tiles = dimensions[0] * self.dimensions[1]
-        self.tiles: list[set[str] | str] = [tileset for _ in range(num_tiles)]
+        self.tiles: list[set[str] | str] = [tileset.tiles for _ in range(num_tiles)]
         self.original_tiles: list[str] = ["e" for _ in range(num_tiles)]  # Store original tiles
+        self.tileset = tileset
 
-    def get_tile(self, x: int, y: int):
-        return self.tiles[y * self.dimensions[0] + x]
+    def get_tile(self, pos: Position):
+        return self.tiles[pos.y * self.dimensions[0] + pos.x]
 
-    def get_tile_string(self, x: int, y: int):
-        colors = {
-                "O": colorama.Fore.BLUE,
-                "B": colorama.Fore.YELLOW,
-                "L": colorama.Fore.GREEN,
-                "P": colorama.Fore.MAGENTA
-                }
-        tile = self.tiles[y * self.dimensions[0] + x]
+    def get_tile_string(self, pos: Position):
+        tile = self.tiles[pos.y * self.dimensions[0] + pos.x]
         if isinstance(tile, set):
             tile = "e"
-        return colors[tile] +  tile
+        return self.tileset.colors.get(tile, colorama.Style.RESET_ALL) + tile
 
-    def set_tile(self, x: int, y: int, value: str | set[str]):
-        self.tiles[y * self.dimensions[0] + x] = value
+    def set_tile(self, pos: Position, value: str | set[str]):
+        self.tiles[pos[1] * self.dimensions[0] + pos[0]] = value
         if value != "P":  # Update original tiles only if not setting the player
-            self.original_tiles[y * self.dimensions[0] + x] = value
+            self.original_tiles[pos.y * self.dimensions[0] + pos.x] = value
+
+    def get_valid_directions(self, pos: Position):
+        return_directions = set()
+        for direction in Direction.all_cardinal():
+            new_pos = pos + direction.get_tuple()
+            if not (new_pos.x < 0
+                    or new_pos.x >= self.dimensions[0]
+                    or new_pos.y < 0
+                    or new_pos.y >= self.dimensions[1]):
+                return_directions.add(direction)
+        return return_directions
 
     # sets tiles in grid
     def __str__(self):
         return_string = ""
         for i in range(self.dimensions[1]):
             for j in range(self.dimensions[0]):
-                return_string += self.get_tile_string(j, i)
+                return_string += self.get_tile_string(Position(j, i))
             # Avoid trailing newline
             if i != self.dimensions[1] - 1:
                 return_string += "\n"
@@ -78,7 +118,7 @@ class Map:
         return_string = ""
         for i in range(self.dimensions[1]):
             for j in range(self.dimensions[0]):
-                return_string += str(self.get_tile(j, i))
+                return_string += str(self.get_tile(Position(j, i)))
             # Avoid trailing newline
             if i != self.dimensions[1] - 1:
                 return_string += "\n"
@@ -86,31 +126,19 @@ class Map:
 
 
 def main():
-    tileset = {"L", "B", "O"}
-    rules: dict[str, dict[Direction, set[str]]] = {
-        "L": {
-            Direction.N: {"L", "B"},
-            Direction.E: {"L", "B"},
-            Direction.S: {"L", "B"},
-            Direction.W: {"L", "B"},
-        },
-        "B": {
-            Direction.N: {"L", "B", "O"},
-            Direction.E: {"L", "B", "O"},
-            Direction.S: {"L", "B", "O"},
-            Direction.W: {"L", "B", "O"},
-        },
-        "O": {
-            Direction.N: {"B", "O"},
-            Direction.E: {"B", "O"},
-            Direction.S: {"B", "O"},
-            Direction.W: {"B", "O"},
-        },
-    }
+    tiles = {"L", "B", "O"}
+    tileset = Tileset(tiles,
+                      colors={
+                              "O": colorama.Fore.BLUE,
+                              "B": colorama.Fore.YELLOW,
+                              "L": colorama.Fore.GREEN,
+                              })
+    tileset.add_rule({"L"}, Direction.all_cardinal(), {"L", "B"})
+    tileset.add_rule({"B", "O"}, Direction.all_cardinal(), {"B", "O"})
     dimensions = (12,12)
-    map = map_generation(dimensions, tileset, rules)
+    map = map_generation(dimensions, tileset)
     player = Player(dimensions)  # Initialize player with randomized position
-    while map.get_tile(player.x, player.y) == "O":
+    while map.get_tile(Position(player.x, player.y)) == "O":
         player = Player(dimensions)  # Reinitialize player until not on 'O'
     player.update_map(map)  # Place player on the map
 
@@ -142,40 +170,33 @@ def main():
         listener.join()
 
 
-def map_generation(dimensions: tuple[int, int], tileset: set[str], rules: dict[str, dict[Direction, set[str]]]):
+def map_generation(dimensions: tuple[int, int], tileset: Tileset):
     map = Map(dimensions, tileset)
     for i in range(dimensions[0]):
         for j in range(dimensions[1]):
-            tile_options = map.get_tile(i, j)
+            tile_options = map.get_tile(Position(i, j))
             if isinstance(tile_options, set):
                 choice = random.choice(list(tile_options))
-                map.set_tile(i, j, choice)
-                propagate_collapse(map, tileset, rules, (i, j), None)
+                map.set_tile(Position(i, j), choice)
+                propagate_collapse(map, Position(i, j), None)
     return map
 
-def propagate_collapse(map: Map, tileset: set[str], rules: dict[str, dict[Direction, set[str]]], position: tuple[int, int], direction: Direction | None = None):
-    prop_source = map.get_tile(position[0], position[1])
-    for dir in [Direction.N, Direction.E, Direction.S, Direction.W]:
-        if dir != direction:
-            target = (position[0] + dir.get_tuple()[0], position[1] + dir.get_tuple()[1])
-            if not (target[0] < 0
-                    or target[0] >= map.dimensions[0]
-                    or target[1] < 0
-                    or target[1] >= map.dimensions[1]):
-                target_options = map.get_tile(target[0], target[1])
-                if isinstance(target_options, set):
-                    if isinstance(prop_source, set):
-                        allowable_tiles = set()
-                        for i in prop_source:
-                            allowable_tiles = allowable_tiles.union(rules[i][dir])
-                        new_options = target_options.intersection(allowable_tiles)
-                    else:
-                        new_options = rules[prop_source][dir].intersection(target_options)
-                    if len(new_options) == 0:
-                        raise ValueError
-                    map.set_tile(target[0], target[1], new_options)
-                    if new_options != target_options:
-                        propagate_collapse(map, tileset, rules, target, dir.opposite())
+def propagate_collapse(map: Map, position: Position, direction: Direction | None = None):
+    print(position)
+    prop_source = map.get_tile(position)
+    iter_directions = map.get_valid_directions(position)
+    iter_directions -= {direction}
+    print(iter_directions)
+    for dir in iter_directions:
+        target = position.traverse(dir)
+        target_options = map.get_tile(target)
+        if isinstance(target_options, set):
+            new_options = target_options.intersection(map.tileset.get_options(prop_source, dir))
+            if len(new_options) == 0:
+                raise ValueError
+            map.set_tile(target, new_options)
+            if new_options != target_options:
+                propagate_collapse(map, target, dir.opposite())
 
 if __name__ == "__main__":
     main()
