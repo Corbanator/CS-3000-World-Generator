@@ -76,6 +76,7 @@ class Map:
 
 
 def main():
+    dimensions = [15, 15]  # Change dimensions to a mutable list
     tileset = {"L", "B", "O"}
     rules: dict[str, dict[Direction, set[str]]] = {
         "L": {
@@ -97,14 +98,20 @@ def main():
             Direction.W: {"B", "O"},
         },
     }
-    dimensions = (20,20)
-    map = map_generation(dimensions, tileset, rules)
+    map = map_generation(tuple(dimensions), tileset, rules)
     player = Player(dimensions)  # Initialize player with randomized position
     while map.get_tile(player.x, player.y) == "O":
         player = Player(dimensions)  # Reinitialize player until not on 'O'
     player.update_map(map)  # Place player on the map
 
-    print("Use arrow keys to move or Q to quit.")
+    print(
+            "\nWelcome to the WFC World Generator Game!\n"
+            "Navigate the player (Orange) using the arrow keys.\n"
+            "Press buttons (Purple) to unlock the goal(Red -> Dark Green).\n"
+            "Avoid obstacles like the ocean (Blue).\n"
+            "Explore the land (Green) and beach (Tan).\n"
+            "Good luck!\n"
+        )
 
     visualizer = MapVisualizer(map, player)  # Initialize the visualizer
 

@@ -27,6 +27,12 @@ class Player:
 
         if 0 <= new_x < map.dimensions[0] and 0 <= new_y < map.dimensions[1]:
             if map.get_tile(new_x, new_y) != "O":
+                if map.get_tile(new_x, new_y) == "U":
+                    visualizer.goal_manager.collect_key(new_x, new_y)
+                elif map.get_tile(new_x, new_y) == "G":  # Check if the player touches the goal
+                    from mapVisual import restart_game  # Import the standalone restart_game function
+                    restart_game(visualizer)  # Call the standalone restart_game function
+                    return
                 map.set_tile(self.x, self.y, map.original_tiles[self.y * map.dimensions[0] + self.x])
                 self.x = new_x
                 self.y = new_y
