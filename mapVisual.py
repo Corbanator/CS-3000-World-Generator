@@ -1,6 +1,9 @@
 import tkinter as tk
+from position import Direction
+from map import Map
 from player import Player
 from goal import GoalManager
+from tileset import Tileset
 
 class MapVisualizer:
     def __init__(self, map, player):
@@ -47,7 +50,7 @@ class MapVisualizer:
         self.root.mainloop()
 
 def restart_game(map_visualizer):
-    from wavefunction_collapse_new import map_generation, Direction
+    from wavefunction_collapse import map_generation
     from player import Player
     from goal import GoalManager  # Ensure GoalManager is reinitialized
     import random
@@ -62,7 +65,7 @@ def restart_game(map_visualizer):
     )
 
     # Regenerate the map
-    tileset = {"L", "B", "O"}
+    tile_options = {"L", "B", "O"}
     rules = {
         "L": {
             Direction.N: {"L", "B"},
@@ -83,7 +86,9 @@ def restart_game(map_visualizer):
             Direction.W: {"B", "O"},
         },
     }
-    map_visualizer.map = map_generation(map_visualizer.map.dimensions, tileset, rules)
+    tileset = Tileset(tile_options, rules)
+    map_visualizer.map = Map(map_visualizer.map.dimensions, tileset)
+    map_generation(map_visualizer.map)
 
     # Reinitialize the player
     map_visualizer.player = Player(map_visualizer.map.dimensions)
