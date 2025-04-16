@@ -135,7 +135,7 @@ def main():
                               })
     tileset.add_rule({"L"}, Direction.all_cardinal(), {"L", "B"})
     tileset.add_rule({"B", "O"}, Direction.all_cardinal(), {"B", "O"})
-    dimensions = (12,12)
+    dimensions = (1000,1000)
     map = map_generation(dimensions, tileset)
     player = Player(dimensions)  # Initialize player with randomized position
     while map.get_tile(Position(player.x, player.y)) == "O":
@@ -182,11 +182,9 @@ def map_generation(dimensions: tuple[int, int], tileset: Tileset):
     return map
 
 def propagate_collapse(map: Map, position: Position, direction: Direction | None = None):
-    print(position)
     prop_source = map.get_tile(position)
     iter_directions = map.get_valid_directions(position)
     iter_directions -= {direction}
-    print(iter_directions)
     for dir in iter_directions:
         target = position.traverse(dir)
         target_options = map.get_tile(target)
