@@ -1,0 +1,20 @@
+{
+	"L": {
+		"rules": {
+			"A": ["L", "B"]
+		}
+		"color": "GREEN"
+	}
+	"B": {
+		"rules": {
+			"A": ["L", "B"]
+		}
+		"color": "YELLOW"
+	}
+	"O": {
+		"rules": {
+			"A": ["L", "B"]
+		}
+		"color": "BLUE"
+	}
+}
