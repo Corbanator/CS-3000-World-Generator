@@ -18,7 +18,7 @@ def main():
                               })
     tileset.add_rule({"L"}, Direction.all_cardinal(), {"L", "B"})
     tileset.add_rule({"B", "O"}, Direction.all_cardinal(), {"B", "O"})
-    dimensions = (1000,1000)
+    dimensions = (10,10)
     map = Map(dimensions, tileset)
     map_generation(map)
     player = Player(dimensions)  # Initialize player with randomized position

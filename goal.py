@@ -1,5 +1,7 @@
 import random
 
+from position import Direction, Position
+
 class GoalManager:
     def __init__(self, map, player):
         self.map = map
@@ -15,51 +17,52 @@ class GoalManager:
             while True:
                 x = random.randint(0, self.map.dimensions[0] - 1)
                 y = random.randint(0, self.map.dimensions[1] - 1)
-                if self.map.get_tile(x, y) not in {"O", "U"} and self.is_reachable(x, y):
-                    self.keys.append((x, y))
-                    self.map.set_tile(x, y, "U")  # "U" represents a button
+                pos = Position(x, y)
+                if self.map.get_tile(pos) not in {"O", "U"} and self.is_reachable(pos):
+                    self.keys.append((pos))
+                    self.map.set_tile(pos, "U")  # "U" represents a button
                     break
 
     def place_goal(self):
         while True:
             x = random.randint(0, self.map.dimensions[0] - 1)
             y = random.randint(0, self.map.dimensions[1] - 1)
-            if self.map.get_tile(x, y) not in {"O", "U"} and self.is_reachable(x, y):
-                self.goal_position = (x, y)
-                self.map.set_tile(x, y, "R")  # "R" represents a red goal (locked)
+            pos = Position(x, y)
+            if self.map.get_tile(pos) not in {"O", "U"} and self.is_reachable(pos):
+                self.goal_position = (pos)
+                self.map.set_tile(pos, "R")  # "R" represents a red goal (locked)
                 break
 
-    def collect_key(self, x, y):
-        if (x, y) in self.keys:
-            self.keys.remove((x, y))
-            self.map.set_tile(x, y, "C")  # "C" represents a pressed button
-            self.map.original_tiles[y * self.map.dimensions[0] + x] = "C"  # Update state to pressed button
+    def collect_key(self, pos: Position):
+        if (pos) in self.keys:
+            self.keys.remove(pos)
+            self.map.set_tile(pos, "C")  # "C" represents a pressed button
             if not self.keys:  # All buttons pressed
-                gx, gy = self.goal_position
-                self.map.set_tile(gx, gy, "G")  # "G" represents a green goal (unlocked)
+                g_pos = self.goal_position
+                self.map.set_tile(g_pos, "G")  # "G" represents a green goal (unlocked)
 
     def is_goal_reachable(self):
         return not self.keys  # Goal is reachable only when all keys are collected
 
-    def is_reachable(self, x, y):
+    def is_reachable(self, target_pos: Position):
         visited = set()
-        stack = [(self.player.x, self.player.y)]
+        stack = [Position(self.player.x, self.player.y)]
 
         while stack:
-            cx, cy = stack.pop()
-            if (cx, cy) == (x, y):
+            pos = stack.pop()
+            if pos == target_pos:
                 return True
 
-            if (cx, cy) in visited:
+            if pos in visited:
                 continue
 
-            visited.add((cx, cy))
+            visited.add(pos)
 
-            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                nx, ny = cx + dx, cy + dy
-                if 0 <= nx < self.map.dimensions[0] and 0 <= ny < self.map.dimensions[1]:
-                    if self.map.get_tile(nx, ny) not in {"O", "U", "R"}:
-                        stack.append((nx, ny))
+            for direction in Direction.all_cardinal():
+                new_pos = pos + direction.get_tuple()
+                if 0 <= new_pos.x < self.map.dimensions[0] and 0 <= new_pos.y < self.map.dimensions[1]:
+                    if self.map.get_tile(new_pos) not in {"O", "U", "R"}:
+                        stack.append(new_pos)
 
         return False
 

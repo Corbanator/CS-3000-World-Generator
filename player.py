@@ -1,5 +1,5 @@
 import random
-from position import Position
+from position import Direction, Position
 
 class Player:
     def __init__(self, dimensions):
@@ -11,40 +11,46 @@ class Player:
     def x(self):
         return self.pos.x
 
+    @x.setter
+    def x(self, x):
+        self.pos = Position(x, self.pos.y)
+
     @property
     def y(self):
         return self.pos.x
 
+    @y.setter
+    def y(self, y):
+        self.pos = Position(self.pos.x, y)
+
     def update_map(self, map):
-        map.set_tile(self.x, self.y, "P")
+        map.set_visual_tile(self.pos, "P")
 
     def handle_keypress(self, event, map, visualizer):
         key = event.keysym
         if key == "Up":
-            self.move(0, -1, map, visualizer)
+            self.move(Direction.N, map, visualizer)
         elif key == "Down":
-            self.move(0, 1, map, visualizer)
+            self.move(Direction.S, map, visualizer)
         elif key == "Left":
-            self.move(-1, 0, map, visualizer)
+            self.move(Direction.W, map, visualizer)
         elif key == "Right":
-            self.move(1, 0, map, visualizer)
+            self.move(Direction.E, map, visualizer)
         elif key == "q":
             visualizer.root.destroy()
 
-    def move(self, dx, dy, map, visualizer):
-        new_x = self.x + dx
-        new_y = self.y + dy
+    def move(self, direction: Direction, map, visualizer):
+        new_pos = self.pos + direction.get_tuple()
 
-        if 0 <= new_x < map.dimensions[0] and 0 <= new_y < map.dimensions[1]:
-            if map.get_tile(new_x, new_y) != "O":
-                if map.get_tile(new_x, new_y) == "U":
-                    visualizer.goal_manager.collect_key(new_x, new_y)
-                elif map.get_tile(new_x, new_y) == "G":  # Check if the player touches the goal
+        if 0 <= new_pos.x < map.dimensions[0] and 0 <= new_pos.y < map.dimensions[1]:
+            if map.get_tile(new_pos) != "O":
+                if map.get_tile(new_pos) == "U":
+                    visualizer.goal_manager.collect_key(new_pos)
+                elif map.get_tile(new_pos) == "G":  # Check if the player touches the goal
                     from mapVisual import restart_game  # Import the standalone restart_game function
                     restart_game(visualizer)  # Call the standalone restart_game function
                     return
-                map.set_tile(self.x, self.y, map.original_tiles[self.y * map.dimensions[0] + self.x])
-                self.x = new_x
-                self.y = new_y
-                map.set_tile(self.x, self.y, "P")
+                map.clear_visual_tile(self.pos)
+                self.pos = new_pos
+                map.set_visual_tile(self.pos, "P")
                 visualizer.update()

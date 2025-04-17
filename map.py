@@ -6,23 +6,31 @@ class Map:
     def __init__(self, dimensions: tuple[int, int], tileset: Tileset):
         self.dimensions = dimensions
         num_tiles = dimensions[0] * self.dimensions[1]
-        self.tiles: list[set[str] | str] = [tileset.tiles for _ in range(num_tiles)]
-        self.original_tiles: list[str] = ["e" for _ in range(num_tiles)]  # Store original tiles
+        self.visual_tiles: list[str] = ["e" for _ in range(num_tiles)]
+        self.original_tiles: list[set[str] | str] = [tileset.tiles for _ in range(num_tiles)]   # Store original tiles
         self.tileset = tileset
 
     def get_tile(self, pos: Position):
-        return self.tiles[pos.y * self.dimensions[0] + pos.x]
+        return self.original_tiles[pos.y * self.dimensions[0] + pos.x]
+
+    def get_visual_tile(self, pos: Position):
+        return self.visual_tiles[pos.y * self.dimensions[0] + pos.x]
 
     def get_tile_string(self, pos: Position):
-        tile = self.tiles[pos.y * self.dimensions[0] + pos.x]
+        tile = self.visual_tiles[pos.y * self.dimensions[0] + pos.x]
         if isinstance(tile, set):
             tile = "e"
         return self.tileset.colors.get(tile, colorama.Style.RESET_ALL) + tile
 
     def set_tile(self, pos: Position, value: str | set[str]):
-        self.tiles[pos[1] * self.dimensions[0] + pos[0]] = value
-        if value != "P":  # Update original tiles only if not setting the player
-            self.original_tiles[pos.y * self.dimensions[0] + pos.x] = value
+        self.original_tiles[pos.y * self.dimensions[0] + pos.x] = value
+        self.visual_tiles[pos[1] * self.dimensions[0] + pos[0]] = value
+
+    def set_visual_tile(self, pos, value: str):
+        self.visual_tiles[pos[1] * self.dimensions[0] + pos[0]] = value
+
+    def clear_visual_tile(self, pos):
+        self.visual_tiles[pos[1] * self.dimensions[0] + pos[0]] = self.original_tiles[pos[1] * self.dimensions[0] + pos[0]]
 
     def get_valid_directions(self, pos: Position):
         return_directions = set()

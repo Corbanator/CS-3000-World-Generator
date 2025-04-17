@@ -1,5 +1,5 @@
 import tkinter as tk
-from position import Direction
+from position import Direction, Position
 from map import Map
 from player import Player
 from goal import GoalManager
@@ -30,7 +30,7 @@ class MapVisualizer:
         self.canvas.delete("all")  # Clear the canvas
         for y in range(self.map.dimensions[1]):
             for x in range(self.map.dimensions[0]):
-                tile = self.map.get_tile(x, y)
+                tile = self.map.get_visual_tile(Position(x, y))
                 if isinstance(tile, set):
                     tile = next(iter(tile)) if len(tile) == 1 else "e"  # Extract single element or default to 'e'
                 color = self.colors.get(tile, "white")  # Default to white if no color is defined
@@ -92,7 +92,7 @@ def restart_game(map_visualizer):
 
     # Reinitialize the player
     map_visualizer.player = Player(map_visualizer.map.dimensions)
-    while map_visualizer.map.get_tile(map_visualizer.player.x, map_visualizer.player.y) == "O":
+    while map_visualizer.map.get_visual_tile(map_visualizer.player.pos) == "O":
         map_visualizer.player = Player(map_visualizer.map.dimensions)
     map_visualizer.player.update_map(map_visualizer.map)
 
