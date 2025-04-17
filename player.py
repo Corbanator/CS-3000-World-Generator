@@ -1,33 +1,56 @@
 import random
+from position import Direction, Position
 
 class Player:
-    def __init__(self, map_dimensions: tuple[int, int]):
-        self.map_width, self.map_height = map_dimensions
-        self.x = random.randint(0, self.map_width - 1)
-        self.y = random.randint(0, self.map_height - 1)
+    def __init__(self, dimensions):
+        x = random.randint(0, dimensions[0] - 1)
+        y = random.randint(0, dimensions[1] - 1)
+        self.pos = Position(x, y)
 
-    def move(self, direction: str, map):
-        target_x, target_y = self.x, self.y
-        if direction == "W" and self.y > 0:
-            target_y -= 1
-        elif direction == "A" and self.x > 0:
-            target_x -= 1
-        elif direction == "S" and self.y < self.map_height - 1:
-            target_y += 1
-        elif direction == "D" and self.x < self.map_width - 1:
-            target_x += 1
+    @property
+    def x(self):
+        return self.pos.x
 
-        # Check if the target tile is not "O"
-        if map.get_tile(target_x, target_y) != "O":
-            self.x, self.y = target_x, target_y
+    @x.setter
+    def x(self, x):
+        self.pos = Position(x, self.pos.y)
 
-    def get_position(self):
-        return self.x, self.y
+    @property
+    def y(self):
+        return self.pos.x
+
+    @y.setter
+    def y(self, y):
+        self.pos = Position(self.pos.x, y)
 
     def update_map(self, map):
-        for i in range(map.dimensions[1]):
-            for j in range(map.dimensions[0]):
-                tile = map.get_tile(j, i)
-                if tile == "P":
-                    map.set_tile(j, i, map.original_tiles[j + i * map.dimensions[0]])  # Restore original tile
-        map.set_tile(self.x, self.y, "P")  # Set new player position
+        map.set_visual_tile(self.pos, "P")
+
+    def handle_keypress(self, event, map, visualizer):
+        key = event.keysym
+        if key == "Up":
+            self.move(Direction.N, map, visualizer)
+        elif key == "Down":
+            self.move(Direction.S, map, visualizer)
+        elif key == "Left":
+            self.move(Direction.W, map, visualizer)
+        elif key == "Right":
+            self.move(Direction.E, map, visualizer)
+        elif key == "q":
+            visualizer.root.destroy()
+
+    def move(self, direction: Direction, map, visualizer):
+        new_pos = self.pos + direction.get_tuple()
+
+        if 0 <= new_pos.x < map.dimensions[0] and 0 <= new_pos.y < map.dimensions[1]:
+            if map.get_tile(new_pos) != "O":
+                if map.get_tile(new_pos) == "U":
+                    visualizer.goal_manager.collect_key(new_pos)
+                elif map.get_tile(new_pos) == "G":  # Check if the player touches the goal
+                    from mapVisual import restart_game  # Import the standalone restart_game function
+                    restart_game(visualizer)  # Call the standalone restart_game function
+                    return
+                map.clear_visual_tile(self.pos)
+                self.pos = new_pos
+                map.set_visual_tile(self.pos, "P")
+                visualizer.update()
