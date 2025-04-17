@@ -60,8 +60,8 @@ def restart_game(map_visualizer):
 
     # Increase dimensions
     map_visualizer.map.dimensions = (
-        map_visualizer.map.dimensions[0] + random.randint(1, 5),
-        map_visualizer.map.dimensions[1] + random.randint(1, 5)
+        min(map_visualizer.map.dimensions[0] + random.randint(1, 5), 32),
+        min(map_visualizer.map.dimensions[1] + random.randint(1, 5), 32)
     )
 
     # Regenerate the map
