@@ -70,11 +70,25 @@ class Tileset:
     def parse_json(filename: str):
         with open(filename) as file:
             our_dict = json.load(file)
-        tiles = our_dict.keys
-        rules = {}
+        tiles = our_dict.keys()
+        new_tileset = Tileset(tiles)
         for tile in tiles:
-            rules[tile] = our_dict[tile]["rules"]
-        print(tiles)
-        print(rules)
+            tile_rules = our_dict[tile]["rules"]
+            for direction_key in tile_rules:
+                directions = Direction.get_set_from_str(direction_key)
+                new_tileset.add_rule({tile}, directions, set(our_dict[tile]["rules"][direction_key]))
+        return new_tileset
+
+
+    def __eq__(self, o):
+        if self.tiles != o.tiles:
+            return False
+        if self.colors != o.colors:
+            return False
+        for tile in self.rules:
+            for direction in self.rules[tile]:
+                if o.rules.get(tile).get(direction) != self.rules[tile][direction]:
+                    return False
+        return True
 
 
