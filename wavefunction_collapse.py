@@ -5,6 +5,7 @@ import colorama
 from position import Position, Direction
 from tileset import Tileset
 from map import Map
+from mapVisual import MapVisualizer
 
 
 def main():
@@ -21,36 +22,31 @@ def main():
     map = Map(dimensions, tileset)
     map_generation(map)
     player = Player(dimensions)  # Initialize player with randomized position
-    while map.get_tile(Position(player.x, player.y)) == "O":
+    while map.get_tile(player.pos) == "O":
         player = Player(dimensions)  # Reinitialize player until not on 'O'
     player.update_map(map)  # Place player on the map
 
-    def on_press(key):
-        try:
-            if key == keyboard.Key.up:
-                player.move("W", map)
-            elif key == keyboard.Key.left:
-                player.move("A", map)
-            elif key == keyboard.Key.down:
-                player.move("S", map)
-            elif key == keyboard.Key.right:
-                player.move("D", map)
-            elif key.char.upper() == "Q":  # Quit the game
-                print("Exiting game.")
-                return False
+    print(
+            "\nWelcome to the WFC World Generator Game!\n"
+            "Navigate the player (Orange) using the arrow keys.\n"
+            "Press buttons (Purple) to unlock the goal(Red -> Dark Green).\n"
+            "Avoid obstacles like the ocean (Blue).\n"
+            "Explore the land (Green) and beach (Tan).\n"
+            "Good luck!\n"
+        )
 
-            player.update_map(map)  # Update map with new player position
-            print(map)
-            # print(f"Player position: {player.get_position()}")
-        except AttributeError:
-            pass
+    visualizer = MapVisualizer(map, player)  # Initialize the visualizer
 
-    print(map)
-    # print(f"Player position: {player.get_position()}")
-    print("Use arrow keys to move or Q to quit.")
+    def on_keypress(event):
+        player.handle_keypress(event, map, visualizer)  # Delegate keypress handling to Player
 
-    with keyboard.Listener(on_press=on_press) as listener:
-        listener.join()
+    visualizer.root.bind("<Up>", lambda event: on_keypress(event))
+    visualizer.root.bind("<Left>", lambda event: on_keypress(event))
+    visualizer.root.bind("<Down>", lambda event: on_keypress(event))
+    visualizer.root.bind("<Right>", lambda event: on_keypress(event))
+    visualizer.root.bind("q", lambda event: on_keypress(event))  # Bind 'q' key to quit
+
+    visualizer.run()  # Run the tkinter visualization
 
 
 def map_generation(map: Map):
