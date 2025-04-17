@@ -1,4 +1,5 @@
 from position import Direction
+import json
 
 class Tileset:
     def __init__(self, 
@@ -63,3 +64,17 @@ class Tileset:
             if i not in self.tiles:
                 raise ValueError
             self.colors[i] = colors[i]
+
+
+    @staticmethod
+    def parse_json(filename: str):
+        with open(filename) as file:
+            our_dict = json.load(file)
+        tiles = our_dict.keys
+        rules = {}
+        for tile in tiles:
+            rules[tile] = our_dict[tile]["rules"]
+        print(tiles)
+        print(rules)
+
+
