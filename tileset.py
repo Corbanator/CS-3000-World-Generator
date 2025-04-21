@@ -70,7 +70,7 @@ class Tileset:
     def parse_json(filename: str):
         with open(filename) as file:
             our_dict = json.load(file)
-        tiles = our_dict.keys()
+        tiles = set(our_dict.keys())
         new_tileset = Tileset(tiles)
         for tile in tiles:
             tile_rules = our_dict[tile]["rules"]
