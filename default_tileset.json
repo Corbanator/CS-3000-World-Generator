@@ -1,20 +1,47 @@
 {
 	"L": {
 		"rules": {
-			"A": ["L", "B"]
-		}
-		"color": "GREEN"
-	}
+			"A": ["L", "B", "F", "M"]
+		},
+		"color": "#00e600",
+		"isWalkable": "True"
+	},
 	"B": {
 		"rules": {
-			"A": ["L", "B"]
-		}
-		"color": "YELLOW"
-	}
-	"O": {
+			"A": ["L", "B", "C", "F"]
+		},
+		"color": "#ffdd99",
+		"isWalkable": "True"
+	},
+	"C": {
 		"rules": {
-			"A": ["L", "B"]
-		}
-		"color": "BLUE"
+			"A": ["C", "B", "O"]
+		},
+		"color": "#00bfff",
+		"isWalkable": "False"
+	},
+	"F": {"rules":{
+		"A": ["L", "B", "M"]
+		},
+		"color": "#29a329",
+		"isWalkable": "True"
+	},
+	"O": {"rules": {
+		"A": ["C"]
+		},
+		"color": "#0000e6",
+		"isWalkable": "False"
+	},
+	"M": {"rules": {
+		"A": ["L", "F"]
+		},
+		"color": "#595959",
+		"isWalkable": "True"
+	},
+	"H": {"rules": {
+		"A": ["M"]
+		},
+		"color": "#e6e6e6",
+		"isWalkable": "False"
 	}
 }

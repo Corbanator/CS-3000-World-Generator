@@ -36,6 +36,22 @@ class Direction(IntEnum):
     def all_cardinal():
         return {Direction.N, Direction.E, Direction.S, Direction.W}
 
+    @staticmethod
+    def get_set_from_str(input: str):
+        match input:
+            case "A":
+                return Direction.all_cardinal()
+            case "N":
+                return {Direction.N}
+            case "E":
+                return {Direction.E}
+            case "S":
+                return {Direction.S}
+            case "W":
+                return {Direction.W}
+            case default:
+                return set()
+
 class Position(namedtuple("Position", "x y")):
     def __add__(self, other: tuple):
         return Position(self[0] + other[0], self[1] + other[1])
