@@ -8,14 +8,14 @@
 	},
 	"B": {
 		"rules": {
-			"A": ["L", "B", "C", "F"]
+			"A": ["L", "B", "S", "F"]
 		},
 		"color": "#ffdd99",
 		"isWalkable": "True"
 	},
-	"C": {
+	"S": {
 		"rules": {
-			"A": ["C", "B", "O"]
+			"A": ["S", "B", "O"]
 		},
 		"color": "#00bfff",
 		"isWalkable": "False"
@@ -27,7 +27,7 @@
 		"isWalkable": "True"
 	},
 	"O": {"rules": {
-		"A": ["C"]
+		"A": ["S"]
 		},
 		"color": "#0000e6",
 		"isWalkable": "False"

@@ -43,7 +43,8 @@ class Player:
         new_pos = self.pos + direction.get_tuple()
 
         if 0 <= new_pos.x < map.dimensions[0] and 0 <= new_pos.y < map.dimensions[1]:
-            if map.get_tile(new_pos) != "O":
+            tile = map.get_tile(new_pos)
+            if map.tileset.is_walkable(tile):
                 if map.get_tile(new_pos) == "U":
                     visualizer.goal_manager.collect_key(new_pos)
                 elif map.get_tile(new_pos) == "G":  # Check if the player touches the goal

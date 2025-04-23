@@ -5,19 +5,21 @@ from pynput import keyboard  # Import keyboard listener
 import colorama
 from tileset import Tileset
 from mapVisual import MapVisualizer
+import tileset
 from wavefunction_collapse import map_generation, map_generation_chunked
 
 
 def main():
-    tiles = {"L", "B", "O"}
-    tileset = Tileset(tiles,
-                      colors={
-                              "O": colorama.Fore.BLUE,
-                              "B": colorama.Fore.YELLOW,
-                              "L": colorama.Fore.GREEN,
-                              })
-    tileset.add_rule({"L"}, Direction.all_cardinal(), {"L", "B"})
-    tileset.add_rule({"B", "O"}, Direction.all_cardinal(), {"B", "O"})
+    # tiles = {"L", "B", "O"}
+    # tileset = Tileset(tiles,
+    #                   colors={
+    #                           "O": colorama.Fore.BLUE,
+    #                           "B": colorama.Fore.YELLOW,
+    #                           "L": colorama.Fore.GREEN,
+    #                           })
+    # tileset.add_rule({"L"}, Direction.all_cardinal(), {"L", "B"})
+    # tileset.add_rule({"B", "O"}, Direction.all_cardinal(), {"B", "O"})
+    tileset = Tileset.parse_json("default_tileset.json")
     dimensions = (10,10)
     chunk_dimensions = (min(dimensions[0] // 4, 32), min(dimensions[1] // 4, 32))
     # map = Map(dimensions, tileset)

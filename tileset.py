@@ -5,7 +5,8 @@ class Tileset:
     def __init__(self, 
                  tiles: set[str] | None = None, 
                  rules: dict[str, dict[Direction, set[str]]] | None = None, 
-                 colors: dict[str, str] | None = None):
+                 colors: dict[str, str] | None = None,
+                 walkability: dict[str, bool] | None = None):
         if tiles is not None:
             self.tiles = tiles
         else:
@@ -27,6 +28,13 @@ class Tileset:
             self.colors = colors
         else:
             self.colors: dict[str, str] = {}
+        if walkability is not None:
+            for tile in walkability:
+                if tile not in self.tiles:
+                    raise ValueError
+            self.walkability = walkability
+        else:
+            self.walkability: dict[str, bool] = {}
 
     def add_rule(self, init_tiles: set[str], directions: set[Direction], terminal_tiles: set[str]):
         if (init_tiles.intersection(self.tiles) != init_tiles 
@@ -65,6 +73,16 @@ class Tileset:
                 raise ValueError
             self.colors[i] = colors[i]
 
+    def set_walkable(self, tiles: set[str], is_walkable: bool):
+        for tile in tiles:
+            self.walkability[tile] = is_walkable
+
+    def is_walkable(self, tile: str):
+        return self.walkability.get(tile, True)
+
+    def get_color(self, tile: str):
+        return self.colors.get(tile, None)
+
 
     @staticmethod
     def parse_json(filename: str):
@@ -77,6 +95,8 @@ class Tileset:
             for direction_key in tile_rules:
                 directions = Direction.get_set_from_str(direction_key)
                 new_tileset.add_rule({tile}, directions, set(our_dict[tile]["rules"][direction_key]))
+            new_tileset.add_colors({tile: our_dict[tile]["color"]})
+            new_tileset.set_walkable({tile}, (our_dict[tile]["isWalkable"] == "True"))
         return new_tileset
 
 

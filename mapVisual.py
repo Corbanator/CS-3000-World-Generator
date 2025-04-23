@@ -1,7 +1,5 @@
 import tkinter as tk
-from position import Direction, Position
-from map import Map
-from player import Player
+from position import Position
 from goal import GoalManager
 from tileset import Tileset
 from wavefunction_collapse import map_generation_chunked
@@ -13,14 +11,14 @@ class MapVisualizer:
         self.goal_manager = GoalManager(map, player)  # Pass the player object to GoalManager
         self.cell_size = 30  # Size of each cell in pixels
         self.colors = {
-            "B": "#D2B48C",  # Tan (beach color)
-            "L": "#556B2F",  # Dark Olive Green (land color)
-            "O": "#4682B4",  # Steel Blue (ocean color)
+            # "B": "#D2B48C",  # Tan (beach color)
+            # "L": "#556B2F",  # Dark Olive Green (land color)
+            # "O": "#4682B4",  # Steel Blue (ocean color)
             "P": "#FF4500",  # Orange Red (Player color)
             "U": "#4B0082",  # Indigo (Button color)
-            "C": "#2E8B57",  # Sea Green (Pressed button color)
+            "C": "#9500ff",  # Brighter Purple (Pressed button color)
             "R": "#8B0000",  # Dark Red (Locked goal color)
-            "G": "#228B22"   # Forest Green (Unlocked goal color)
+            "G": "#dcaf09"   # Gold (Unlocked goal color)
         }
         self.root = tk.Tk()
         self.root.focus_force()  # Ensure the new window is the active window
@@ -34,7 +32,9 @@ class MapVisualizer:
                 tile = self.map.get_visual_tile(Position(x, y))
                 if isinstance(tile, set):
                     tile = next(iter(tile)) if len(tile) == 1 else "e"  # Extract single element or default to 'e'
-                color = self.colors.get(tile, "white")  # Default to white if no color is defined
+                color = self.map.tileset.get_color(tile)
+                if color is None:
+                    color = self.colors.get(tile, "white")  # Default to white if no color is defined
                 self.canvas.create_rectangle(
                     x * self.cell_size, y * self.cell_size,
                     (x + 1) * self.cell_size, (y + 1) * self.cell_size,
@@ -52,7 +52,6 @@ class MapVisualizer:
 
 def restart_game(map_visualizer):
     from player import Player
-    from goal import GoalManager  # Ensure GoalManager is reinitialized
     import random
 
     # Close the current window
@@ -65,28 +64,29 @@ def restart_game(map_visualizer):
     )
 
     # Regenerate the map
-    tile_options = {"L", "B", "O"}
-    rules = {
-        "L": {
-            Direction.N: {"L", "B"},
-            Direction.E: {"L", "B"},
-            Direction.S: {"L", "B"},
-            Direction.W: {"L", "B"},
-        },
-        "B": {
-            Direction.N: {"L", "B", "O"},
-            Direction.E: {"L", "B", "O"},
-            Direction.S: {"L", "B", "O"},
-            Direction.W: {"L", "B", "O"},
-        },
-        "O": {
-            Direction.N: {"B", "O"},
-            Direction.E: {"B", "O"},
-            Direction.S: {"B", "O"},
-            Direction.W: {"B", "O"},
-        },
-    }
-    tileset = Tileset(tile_options, rules)
+    # tile_options = {"L", "B", "O"}
+    # rules = {
+    #     "L": {
+    #         Direction.N: {"L", "B"},
+    #         Direction.E: {"L", "B"},
+    #         Direction.S: {"L", "B"},
+    #         Direction.W: {"L", "B"},
+    #     },
+    #     "B": {
+    #         Direction.N: {"L", "B", "O"},
+    #         Direction.E: {"L", "B", "O"},
+    #         Direction.S: {"L", "B", "O"},
+    #         Direction.W: {"L", "B", "O"},
+    #     },
+    #     "O": {
+    #         Direction.N: {"B", "O"},
+    #         Direction.E: {"B", "O"},
+    #         Direction.S: {"B", "O"},
+    #         Direction.W: {"B", "O"},
+    #     },
+    # }
+    # tileset = Tileset(tile_options, rules)
+    tileset = Tileset.parse_json("default_tileset.json")
     # map_visualizer.map = Map(map_visualizer.map.dimensions, tileset)
     # map_generation(map_visualizer.map)
     dimensions = (map_visualizer.map.dimensions)
@@ -95,7 +95,7 @@ def restart_game(map_visualizer):
 
     # Reinitialize the player
     map_visualizer.player = Player(map_visualizer.map.dimensions)
-    while map_visualizer.map.get_visual_tile(map_visualizer.player.pos) == "O":
+    while not map_visualizer.map.tileset.is_walkable(map_visualizer.map.get_visual_tile(map_visualizer.player.pos)):
         map_visualizer.player = Player(map_visualizer.map.dimensions)
     map_visualizer.player.update_map(map_visualizer.map)
 

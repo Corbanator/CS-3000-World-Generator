@@ -61,7 +61,8 @@ class GoalManager:
             for direction in Direction.all_cardinal():
                 new_pos = pos + direction.get_tuple()
                 if 0 <= new_pos.x < self.map.dimensions[0] and 0 <= new_pos.y < self.map.dimensions[1]:
-                    if self.map.get_tile(new_pos) not in {"O", "U", "R"}:
+                    tile = self.map.get_tile(new_pos)
+                    if tile not in {"U", "R"} and self.map.tileset.is_walkable(tile):
                         stack.append(new_pos)
 
         return False
