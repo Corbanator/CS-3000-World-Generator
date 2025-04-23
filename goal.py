@@ -46,7 +46,7 @@ class GoalManager:
 
     def is_reachable(self, target_pos: Position):
         visited = set()
-        stack = [Position(self.player.x, self.player.y)]
+        stack = [self.player.pos]
 
         while stack:
             pos = stack.pop()

@@ -4,6 +4,7 @@ from map import Map
 from player import Player
 from goal import GoalManager
 from tileset import Tileset
+from wavefunction_collapse import map_generation_chunked
 
 class MapVisualizer:
     def __init__(self, map, player):
@@ -50,7 +51,6 @@ class MapVisualizer:
         self.root.mainloop()
 
 def restart_game(map_visualizer):
-    from wavefunction_collapse import map_generation
     from player import Player
     from goal import GoalManager  # Ensure GoalManager is reinitialized
     import random
@@ -87,8 +87,11 @@ def restart_game(map_visualizer):
         },
     }
     tileset = Tileset(tile_options, rules)
-    map_visualizer.map = Map(map_visualizer.map.dimensions, tileset)
-    map_generation(map_visualizer.map)
+    # map_visualizer.map = Map(map_visualizer.map.dimensions, tileset)
+    # map_generation(map_visualizer.map)
+    dimensions = (map_visualizer.map.dimensions)
+    chunk_dimensions = (min(dimensions[0] // 4, 32), min(dimensions[1] // 4, 32))
+    map_visualizer.map = map_generation_chunked(tileset, dimensions, chunk_dimensions, num_threads=8)
 
     # Reinitialize the player
     map_visualizer.player = Player(map_visualizer.map.dimensions)
