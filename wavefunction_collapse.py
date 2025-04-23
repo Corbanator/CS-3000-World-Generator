@@ -22,8 +22,8 @@ def map_generation_chunked(tileset: Tileset, dimensions: tuple[int, int], chunk_
     
     regen_offset = (chunk_dimensions[0] // 2, chunk_dimensions[1] // 2)
     jobs = multiprocessing.Queue()
-    x_pos_list = [(x, chunk_dimensions[0]) for x in range(regen_offset[0], dimensions[0] + regen_offset[0], chunk_dimensions[0])]
-    y_pos_list = [(y, chunk_dimensions[1]) for y in range(regen_offset[1], dimensions[1] + regen_offset[1], chunk_dimensions[1])]
+    x_pos_list = [(x, chunk_dimensions[0]) for x in range(regen_offset[0], dimensions[0], chunk_dimensions[0])]
+    y_pos_list = [(y, chunk_dimensions[1]) for y in range(regen_offset[1], dimensions[1], chunk_dimensions[1])]
     x_pos_list = map(lambda x: job_trimmer(x, dimensions[0], regen_offset[0], looping), x_pos_list)
     y_pos_list = map(lambda y: job_trimmer(y, dimensions[1], regen_offset[1], looping), y_pos_list)
     if not looping:
@@ -32,6 +32,10 @@ def map_generation_chunked(tileset: Tileset, dimensions: tuple[int, int], chunk_
 
     jobs_list = itertools.product(x_pos_list, y_pos_list)
     jobs_list = list(map(job_zipper, jobs_list))
+    # Avoid using too many threads
+    # job_thread_factor = 1024 // (chunk_dimensions[0] * chunk_dimensions[1])
+    # if len(jobs_list) < num_threads * job_thread_factor:
+    #     num_threads = max(len(jobs_list) // job_thread_factor, 1)
 
     # This is required to ensure threads are less likely to work
     # on neighboring chunks, which could lead to conflicts.
@@ -41,7 +45,7 @@ def map_generation_chunked(tileset: Tileset, dimensions: tuple[int, int], chunk_
     old_y = -1
     last_even = False
     last_row_even = False
-    
+
     for job in jobs_list:
         if job[0].y != old_y:
             old_y = job[0].y
@@ -77,17 +81,17 @@ def job_zipper(job):
 
 def chunk_worker(map, jobs):
     label = multiprocessing.current_process().name
-    print(f"Starting thread {label}")
+    # print(f"Starting thread {label}")
     while True:
         try:
             job = jobs.get(timeout=0.2)
-        except (queue.Empty, OSError):
+        except (queue.Empty, OSError, EOFError):
             break
         # print(f"Thread {label} working job {job}")
         remove_section_and_repropagate(map, job[0], job[1])
         map_generation(map, job, True)
         # print(f"Thread {label} finished job {job}")
-    print(f"No more jobs in queue. Killing thread {label}")
+    # print(f"No more jobs in queue. Killing thread {label}")
 
 
 def remove_section_and_repropagate(map: Map, pos: Position, dimensions: tuple[int, int]):
@@ -133,7 +137,11 @@ def map_generation(map: Map, limits: tuple[Position, tuple[int, int]] | None = N
 
 
 def propagate_collapse(map: Map, position: Position, direction: Direction | None = None, limit_directions: set[Direction] | None = None):
-    prop_source = map.get_tile(position)
+    try:
+        prop_source = map.get_tile(position)
+    except:
+        print(position)
+        print(map.dimensions)
     iter_directions = map.get_valid_directions(position)
     iter_directions -= {direction}
     if limit_directions is not None:
@@ -144,6 +152,8 @@ def propagate_collapse(map: Map, position: Position, direction: Direction | None
         if isinstance(target_options, set):
             new_options = target_options.intersection(map.tileset.get_options(prop_source, dir))
             if len(new_options) == 0:
+                print(f"Problem at position {target}. Tried to intersect with {map.tileset.get_options(prop_source, dir)}")
+                map.print_debug()
                 raise ValueError
             map.set_tile(target, new_options)
             if new_options != target_options:
