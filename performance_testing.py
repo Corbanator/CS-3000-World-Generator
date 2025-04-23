@@ -26,17 +26,33 @@ def test_unthreaded(map, seed):
 
 def setup_map(dimensions):
     tileset = Tileset.parse_json("default_tileset.json")
-    return Map(dimensions, tileset)
+    return Map.new(dimensions, tileset)
 
 
 def check_map(map: Map):
+    print("Checking map for inconsistencies...")
     for i in range(map.dimensions[0]):
         for j in range(map.dimensions[1]):
             pos = Position(i, j)
             tile = map.get_tile(pos)
             for dir in map.get_valid_directions(pos):
-                if map.get_tile(pos + dir.get_tuple()) not in map.tileset.get_options({tile}, dir):
-                    print(f"Failure at {pos+ dir.get_tuple()}: expected member of {map.tileset.get_options({tile}, dir)}, found {map.get_tile(pos + dir.get_tuple())}")
+                target = pos + dir.get_tuple()
+                target_tile = map.get_tile(target)
+                if target_tile not in map.tileset.get_options({tile}, dir):
+                    print(f"Failure at {target}: expected member of {map.tileset.get_options({tile}, dir)}, found {map.get_tile(pos + dir.get_tuple())}")
+                    print("neighborhood of target:")
+                    neighborhood = map.get_patch(target + (-1, -1), (3, 3))
+                    neighborhood.print_debug()
+                    alternatives = map.tileset.tiles
+                    for dir in map.get_valid_directions(target):
+                        secondary = target + dir.get_tuple()
+                        alternatives = alternatives.intersection(map.tileset.get_options({map.get_tile(secondary)}, dir.opposite()))
+                    selection = None
+                    if len(alternatives) > 0:
+                        selection = random.choice(list(alternatives))
+                        map.set_tile(target, selection)
+                    print(f"Found functional alternatives: {alternatives}. Selecting {selection}.")
+    print("Map checked.")
 
 
 def test_performance():

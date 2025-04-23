@@ -1,15 +1,38 @@
 import colorama
 from position import Position, Direction
 from tileset import Tileset
+import copy
 
 class Map:
-    def __init__(self, dimensions: tuple[int, int], tileset: Tileset, looping: bool = False):
-        self.dimensions = dimensions
-        num_tiles = dimensions[0] * self.dimensions[1]
-        self.visual_tiles: list[str] = ["e" for _ in range(num_tiles)]
-        self.original_tiles: list[set[str] | str] = [tileset.tiles for _ in range(num_tiles)]   # Store original tiles
+    def __init__(self):
+        self.tileset: Tileset
+        self.dimensions: tuple[int, int]
+        self.visual_tiles: list[str] = []
+        self.original_tiles: list[set[str] | str] = []
+        self.looping: bool = False
+
+    @staticmethod
+    def new(dimensions: tuple[int, int], tileset: Tileset, looping: bool = False):
+        new_map = Map()
+        new_map.dimensions = dimensions
+        num_tiles = dimensions[0] * dimensions[1]
+        new_map.visual_tiles = ["e" for _ in range(num_tiles)]
+        new_map.original_tiles = [tileset.tiles for _ in range(num_tiles)]   # Store original tiles
+        new_map.tileset = tileset
+        new_map.looping = looping
+        return new_map
+
+    def set_tileset(self, tileset: Tileset):
+        num_tiles = self.dimensions[0] * self.dimensions[1]
+        self.visual_tiles = ["e" for _ in range(num_tiles)]
+        self.original_tiles = [tileset.tiles for _ in range(num_tiles)]   # Store original tiles
         self.tileset = tileset
-        self.looping = looping
+
+    def self_from_map(self, map):
+        self.dimensions = map.dimensions
+        self.set_tileset(map.tileset)
+        self.original_tiles = map.original_tiles
+        self.visual_tiles = map.visual_tiles
 
     def get_tile(self, pos: Position):
         x = pos.x
@@ -18,6 +41,35 @@ class Map:
             x = x % self.dimensions[0]
             y = y % self.dimensions[1]
         return self.original_tiles[y * self.dimensions[0] + x]
+
+    def get_patch(self, pos: Position, dimensions: tuple[int, int]):
+        map = Map()
+        map.dimensions = dimensions
+        map.set_tileset(self.tileset)
+        for i in range(dimensions[0]):
+            for j in range(dimensions[1]):
+                get_tile = pos + (i, j)
+                map.set_tile(Position(i, j), self.get_tile(get_tile))
+        return map
+
+    def get_self_as_map(self):
+        return self.get_patch(Position(0, 0), self.dimensions)
+
+    def apply_patch(self, pos: Position, patch_map):
+        for i in range(patch_map.dimensions[0]):
+            for j in range(patch_map.dimensions[1]):
+                target = pos + (i, j)
+                self.set_tile(target, patch_map.get_tile(Position(i, j)))
+
+
+    def get_dimensions(self):
+        return self.dimensions
+
+    def set_dimensions(self, dimensions: tuple[int, int]):
+        self.dimensions = dimensions
+
+    def get_tileset(self):
+        return self.tileset
 
     def get_visual_tile(self, pos: Position):
         x = pos.x
@@ -84,8 +136,11 @@ class Map:
             for j in range(new_dimensions[1]):
                 target = Position(i, j)
                 new_tiles.append(self.get_tile(target))
-        self.original_tiles = new_tiles
-        self.visual_tiles = new_tiles
+        # Deeply copy the new tiles, to avoid accidentally
+        # Setting original and visual tiles to the same object
+        # By reference, syncing them
+        self.original_tiles = copy.deepcopy(new_tiles)
+        self.visual_tiles = copy.deepcopy(new_tiles)
         self.dimensions = new_dimensions
         self.looping = was_looping
 

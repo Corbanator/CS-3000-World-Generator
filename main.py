@@ -5,7 +5,7 @@ from pynput import keyboard  # Import keyboard listener
 import colorama
 from tileset import Tileset
 from mapVisual import MapVisualizer
-from wavefunction_collapse import map_generation
+from wavefunction_collapse import map_generation, map_generation_chunked
 
 
 def main():
@@ -19,8 +19,10 @@ def main():
     tileset.add_rule({"L"}, Direction.all_cardinal(), {"L", "B"})
     tileset.add_rule({"B", "O"}, Direction.all_cardinal(), {"B", "O"})
     dimensions = (10,10)
-    map = Map(dimensions, tileset)
-    map_generation(map)
+    chunk_dimensions = (min(dimensions[0] // 4, 32), min(dimensions[1] // 4, 32))
+    # map = Map(dimensions, tileset)
+    # map_generation(map)
+    map = map_generation_chunked(tileset, dimensions, chunk_dimensions, num_threads=8)
     player = Player(dimensions)  # Initialize player with randomized position
     while map.get_tile(player.pos) == "O":
         player = Player(dimensions)  # Reinitialize player until not on 'O'
